@@ -1,13 +1,14 @@
 <template>
   <div class='metamask-info'>
     <div id="title-img">
-      <img src="../assets/title.png"/>
+      <img src="../assets/title.png" style="margin-top:-30px;" />
     </div>
     <b-button-group class="btns">
       <b-button variant="success" class="btn" @click="attemptLogin">Log in</b-button>
       <b-button variant="info" class="btn" @click="attemptRegist">Register</b-button>
       <b-button variant="primary" class="btn" @click="attemptUpdateGoods">Update Goods</b-button>
       <b-button variant="warning" class="btn" @click="attemptHistory">My Transaction History</b-button>
+      <b-button variant="outline-success" class="btn" @click="attemptRecharge"> Recharge My EI Coins </b-button>
     </b-button-group>
     <div id="address">Current Address: {{ coinbase }}</div>
     <div class="info-btn" v-on:click="checkUserInfo" ref="userimg">
@@ -57,6 +58,18 @@
         <b-alert variant="danger" :dismissible="false" :show="true">
             {{ errMessage }}
         </b-alert>
+    </b-modal>
+    <b-modal ref="rechargeBox" title="Recharge EI Account" hide-footer>
+      <b-alert :show="showBox" @dismissed="showBox=false;" :dismissible="false" :variant="alertType">
+          {{ alertMessage }}
+      </b-alert>
+      <p class="rate"><strong> Exchange Rate: 1 EI Coin  ==  1 Mwei  ==  10^(-12) Ether </strong></p>
+      <hr/>
+      <b-form @submit.prevent="rechargeEI">
+        <b-form-input type="text" id="EICoin" v-model="EICoin" required placeholder="Enter target EI Coins amount" class="mb-3">
+        </b-form-input>
+        <b-button type="submit" variant="success"> Recharge my EI Balance </b-button>
+      </b-form>
     </b-modal>
     <b-modal ref="buyGoods" title="Buy New Goods" hide-footer>
       <b-alert :show="showBox" @dismissed="showBox=false;" :dismissible="false" :variant="alertType">
@@ -119,7 +132,9 @@ export default {
         // For buying behavior variables
         buyTarget: {},
         // Gneral timeout, force behavior to be done in thirty seconds
-        timeout: 0
+        timeout: 0,
+        // EI Recharge
+        EICoin: ''
     }
   },
   mounted() {
@@ -265,15 +280,34 @@ export default {
           this.$refs.errBox.show()
           return;
         }
-        // Get target goods informations
-        let target = this.items[this.items.length - 1 - index]
-        if(target.seller == this.$store.state.user.username){
-          this.errMessage = 'Do not try to buy goods created by yourself ~'
-          this.$refs.errBox.show()
-          return;
-        }
-        this.buyTarget = target
-        this.$refs.buyGoods.show()
+        // Check user balance enough or not
+        let userContract = this.$store.state.UserInstance()
+        let coinbase = this.$store.state.web3.coinbase
+        userContract.methods.getBalanceByAddr(coinbase).call().then((result, err) => {
+          // Get target goods informations
+          let target = this.items[this.items.length - 1 - index]
+          if(target.seller == this.$store.state.user.username){
+            this.errMessage = 'Do not try to buy goods created by yourself ~'
+            this.$refs.errBox.show()
+            return;
+          }
+          if(Number(result) < target.price){
+            this.errMessage = 'You do not have enough EI Coins to buy this stuff!'
+            this.$refs.errBox.show()
+            return;
+          }else {
+            this.buyTarget = target
+            this.$refs.buyGoods.show()
+          }
+        })
+    },
+    attemptRecharge() {
+      if(!this.$store.state.user.username){
+        this.errMessage = 'Please Sign in your account first !'
+        this.$refs.errBox.show()
+      }else {
+        this.$refs.rechargeBox.show()
+      }
     },
     acceptGoods() {
       this.showBox = true
@@ -284,14 +318,6 @@ export default {
       let userContract = this.$store.state.UserInstance()
       let goodsContract = this.$store.state.GoodsInstance()
       let eiContract = this.$store.state.EiInstance()
-      // Limit buying behavior in one minute
-      setTimeout(() => {
-        this.alertMessage = "Buying time out, please commit your change fastly!"
-        this.alertDismissable = true
-        setTimeout(() => {
-          this.$refs.buyGoods.hide()
-        }, 2000)
-      }, 60000)
       goodsContract.methods.acceptGoods(targetID).send({from:coinbase}).then((result, err) => {
         if(result){
           this.alertMessage = "Buying target goods successfully! \n Now please finish pending transaction to your personal history!"
@@ -323,17 +349,9 @@ export default {
         let goodsContract = this.$store.state.GoodsInstance()
         this.showBox = true
         this.alertMessage = "Pending new good, please wait several seconds until all things done~"
-        setTimeout(() => {
-          this.alertMessage = "Pending timeout, your should finish all your request in 30 secs ! "
-          this.alertDismissable = true
-          setTimeout(() => {
-            this.$refs.Update.hide()
-            this.alertDismissable = false
-            this.showBox = false
-          }, 2000)
-        }, 30000)
         goodsContract.methods.createNewGoods(coinbase, this.good_name, this.good_price, this.good_info, this.good_desc)
         .send({from:coinbase}).then((result, err) => {
+            console.log(result)
             if(result){
                 this.alertMessage = 'Creating New Goods:' + this.good_name + ' Successfully~'
             }else {
@@ -343,9 +361,43 @@ export default {
             setTimeout(() => {
               this.$refs.Update.hide()
               this.showBox = false
-              window.onload()
             }, 2000)
         })
+    },
+    rechargeEI() {
+      let EIRoot = "0x53fb7dc367adc0995be0a8186893eac88aba457e"
+      let web3 = this.$store.state.web3.web3Instance()
+      let coinbase = this.$store.state.web3.coinbase
+      let wei = Number(this.EICoin) * Math.pow(10, 6)
+      let userContract = this.$store.state.UserInstance()
+      // Showing transaction infos
+      this.showBox = true
+      this.alertMessage = "Recharging your EI Account, please wait for several seconds..."
+      web3.eth.sendTransaction({from:coinbase, to:EIRoot, value:wei}, (err, result) => {
+        if(result){
+          userContract.methods.increaseBalance(coinbase, this.EICoin).send({from:coinbase}).then((res, err) => {
+            if(res){
+              this.alertMessage = "Recharge EI Balance finish~ Thank you for using Ether-Idle~"
+            }else {
+              this.alertMessage = "Recharge failed !"
+              this.alertDismissable = true
+            }
+            setTimeout(() => {
+              this.$refs.rechargeBox.hide()
+              this.showBox = false
+              this.alertDismissable = false
+            }, 2000)
+          })
+        }else {
+          this.alertMessage = "Recharge failed !"
+          this.alertDismissable = true
+          setTimeout(() => {
+              this.$refs.rechargeBox.hide()
+              this.showBox = false
+              this.alertDismissable = false
+            }, 2000)
+        }
+      })
     }
   }
 }
@@ -425,7 +477,6 @@ export default {
 
 .redstate {
   color: red;
-
 }
 
 .greenstate {
@@ -437,7 +488,7 @@ export default {
   height: 250%;
   margin: 50px;
   margin-right: 0px;
-  margin-top: 100px;
+  margin-top: 50px;
   margin-bottom: 100px;
 }
 
@@ -473,13 +524,16 @@ export default {
 }
 
 .btns {
-  position: fixed;
-  top: 0px;
-  right: 180px;
+  margin-top: 30px;
 }
 
 .btn {
   margin-right: 10px;
+}
+
+.rate {
+  color:cadetblue;
+  font-size: 17px;
 }
 
 canvas{

@@ -151,9 +151,11 @@ export default {
                     this.alertMessage = "Confirm finish~, calculating seller and buyer balance account..."
                     userContract.methods.increaseBalance(target.sellerAddr, target.price).send({from:coinbase})
                     .then((result, err) => {
+                        console.log(result)
                         if(result){
                             userContract.methods.decreaseBalance(target.buyerAddr, target.price).send({from:coinbase})
                             .then((result, err) => {
+                                console.log(result)
                                 if(result){
                                     this.alertMessage = "All things done~ Thank you for using Ether-Idle~"
                                     setTimeout(() => {
