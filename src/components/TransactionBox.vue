@@ -86,8 +86,9 @@ export default {
                 if(length == this.pendingItems.length){
                     return;
                 }
-                for(var i=0; i<length; i++){
-                    eiContract.methods.getPendingTrans(coinbase, i).call().then((result, err) => {
+                let len = length - this.pendingItems.length
+                for(var i=0; i<len; i++){
+                    eiContract.methods.getPendingTrans(coinbase, i+this.pendingItems.length).call().then((result, err) => {
                         let newEntity = {
                             id: this.pendingItems.length,
                             sellerAddr: result[0],
@@ -113,10 +114,11 @@ export default {
                 if(length == this.confirmedItems.length){
                     return;
                 }
-                for(var i=0; i<length; i++){
-                    eiContract.methods.getConfirmedTrans(coinbase, i).call().then((result, err) => {
+                let len = length - this.confirmedItems.length
+                for(var i=0; i<len; i++){
+                    eiContract.methods.getConfirmedTrans(coinbase, i+this.confirmedItems.length).call().then((result, err) => {
                         let newEntity = {
-                            id: this.confirmedItems.length + this.pendingItems.length,
+                            id: this.confirmedItems.length + 99999,
                             goodsName: result[2],
                             sellerName: result[3],
                             buyerName: result[4],
@@ -148,7 +150,7 @@ export default {
             eiContract.methods.confirmPendingTrans(target.sellerAddr, target.buyerAddr, target.goodsName).send({from:coinbase})
             .then((result, err) => {
                 if(result){
-                    this.pendingItems.slice(this.pendingItems.length - 1 - target.id,1)
+                    this.pendingItems.splice(this.pendingItems.length - 1 - target.id,1)
                     this.alertMessage = "Confirm finish~, calculating seller and buyer balance account..."
                     userContract.methods.increaseBalance(target.sellerAddr, target.price).send({from:coinbase})
                     .then((result, err) => {

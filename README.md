@@ -1,8 +1,13 @@
-# ether-idle
+# Ether-Idle
 
-> A Vue.js project
+> BlockChain Final Project
 
-## Build Setup
+> For Project Report, please check dir `report`
+
+## 测试网站(使用`Ropsten`测试链运行)
+https://cranky-mcnulty-226432.netlify.com/
+
+## 本地安装，运行命令
 
 ``` bash
 # install dependencies
@@ -18,4 +23,3 @@ npm run build
 npm run build --report
 ```
 
-For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
