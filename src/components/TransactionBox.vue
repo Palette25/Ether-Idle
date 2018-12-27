@@ -148,6 +148,7 @@ export default {
             eiContract.methods.confirmPendingTrans(target.sellerAddr, target.buyerAddr, target.goodsName).send({from:coinbase})
             .then((result, err) => {
                 if(result){
+                    this.pendingItems.slice(this.pendingItems.length - 1 - target.id,1)
                     this.alertMessage = "Confirm finish~, calculating seller and buyer balance account..."
                     userContract.methods.increaseBalance(target.sellerAddr, target.price).send({from:coinbase})
                     .then((result, err) => {

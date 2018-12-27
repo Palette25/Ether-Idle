@@ -215,7 +215,7 @@ const UserAbi = [
 		"type":"function"
 	}
 ];
-const UserAddress = "0x3534f31a997905b4193034e38b597af371df5445";
+const UserAddress = "0x30c2dfa92992cfeba6004b1940d1957a721111d1";
 
 const GoodsAbi = [
 	{
@@ -339,7 +339,7 @@ const GoodsAbi = [
 	}
 ];
 
-const GoodsAddress = "0xe0f30784578ed7c4196430a7f3f966927f4e01d4";
+const GoodsAddress = "0x020b221c2e0f1993ca962fb732609f39848fbb7a";
 
 const EIAbi = [
 	{
@@ -542,6 +542,6 @@ const EIAbi = [
 	}
 ];
 
-const EIAddress = "0xc4869b0f67d28bf8f6557477ae351a825d13e1d0";
+const EIAddress = "0x6a9f0005725a68160d58738d73c0dfd8b416b64e";
 
 export {UserAddress, UserAbi, GoodsAddress, GoodsAbi, EIAddress, EIAbi};

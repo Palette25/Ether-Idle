@@ -197,7 +197,7 @@ export default {
                         scale: 10
                     }), cards[i].childNodes[0])
                   }
-                }, 500)
+                }, 1200)
             }
         })
     }, 1000)
